@@ -1,45 +1,70 @@
-1. CLUSTER IP, INGRES AL POD Y EN EL POD LA CONSULTA AL SERVICIO DE NGINX MEDIANTE UN CURL
+The following documents the process used to expose applications deployed on a local Kubernetes cluster (Minikube) using the different types of services available: ClusterIP, NodePort, LoadBalancer, and Ingress.
+
+1.Cluster IP
+
+In this case, we start from the fact that: ClusterIP is the default type of Service. It is only accessible from within the cluster (other pods, DaemonSets, Jobs, etc.). It does not expose ports to the host or the Internet.
+
+
 ![alt text](image-1.png)
+The previous image shows the status of the replicas. 
+
 ![alt text](image.png)
+The previous image demonstrates the query executed using curl, which was successful as it returned a response from the nginx server.
 
 2. NODEPORT
 
+
+Se creó el deployment a partir de la imagen de httpd:
 ![alt text](image-3.png)
+
+Subsequently, the service was exposed and its status was validated to ensure that the pods were running correctly and accessible within the cluster.
+
 ![alt text](image-2.png)
 
-Dado que: se ejecuta minikube con Docker Desktop como controlador de contenedor, se necesita un túnel de minikube. Esto se debe a que los contenedores dentro de Docker Desktop están aislados del equipo host.
+NodePort is a type of service that exposes a port from the pods directly on the host, allowing access from outside the cluster. Unlike ClusterIP, the service can be accessed from the host machine without the need for additional tunnels.
 
-Para ello se ejecuta en una terminal el comando a continuación:
+Since Minikube runs with Docker as the container controller, containers are isolated from the host. However, for NodePort, this does not prevent access, because the service automatically assigns a port on the host machine that redirects to the pods.
+
+To validate the service, the following command was used:
+
 ![alt text](image-4.png)
-Al acceder a la url indicada se evidencia que efectivamente funciona:
+
+This command returns the accessible URL of the service, including the host IP and the port assigned by NodePort. Therefore, when accessing the indicated URL, it is evident that it works effectively:
 
 ![alt text](image-5.png)
 
-E igualmente se realiza la validación por consola: 
+The pod and service are validated in the same way:
 
 ![alt text](image-6.png)
 
 3. LOAD BALANCER
 
-Creación del deployment y exposición del servicio:
+The LoadBalancer service allows you to expose a service through an external load balancer, typically with a public IP address in cloud environments.
+
+Creating the deployment and exposing the service:
 
 ![alt text](image-10.png)
 
-Establecimiento de tunel: 
+Setting up the tunnel in Minikube:
 
 ![alt text](image-7.png)
 
-Sin embargo, es importante destacar que, en entornos de nube, el tipo de servicio LoadBalancer crea un balanceador externo con una IP pública. En este entorno local con Minikube, se simuló dicho comportamiento utilizando el comando minikube tunnel, el cual asigna la dirección IP 127.0.0.1 al servicio para enrutar el tráfico local hacia los pods.
+Note: In Minikube, since there is no actual external load balancer, minikube tunnel simulates this behavior by assigning the IP address 127.0.0.1 to the service to route local traffic to the pods.
 
-No obstante, al ejecutarse dentro de WSL, este túnel es accesible únicamente desde la máquina virtual de Minikube (o dentro del mismo entorno WSL), como se observa en la imagen anterior. Por este motivo, las pruebas realizadas desde los pods respondían correctamente, mientras que las solicitudes externas desde el entorno WSL no obtenían respuesta.
+When running within WSL, this tunnel is only accessible from the Minikube or WSL environment. Therefore, tests from the pods responded correctly, while external requests from the host machine did not receive a response.
 
-Finalmente, la validación del servicio se realizó mediante el comando minikube service myapp-service-lb, que permite exponer y acceder al servicio a través del balanceador simulado.
+Finally, the service was validated using:
 
 ![alt text](image-11.png)
 ![alt text](image-12.png)
 
-NOTA: Se presentan dos direcciones ip entre las distintas imagenes debido a que el loadbalancer se creó en dos momentos diferentes. 
+Note: Two different IP addresses are shown in the images because the LoadBalancer was created at two different times during the lab.
 
 4. Ingress
+
+Ingress allows you to define HTTP/HTTPS routing rules to expose multiple services through a single IP or domain, managing the entry of external traffic to the internal services of the cluster.
+
+For the Ingress example, the deployment was created using the traefik/whoami image. The Ingress controller was enabled and its status verified, noting that it functions similarly to a LoadBalancer within the cluster. Afterwards, the /etc/hosts file on the host machine was updated to map the custom domain to the Minikube IP. Finally, the Ingress routing was tested successfully using curl to query the domain, confirming that traffic was correctly routed to the pod.
+
 
 ![alt text](image-9.png)
